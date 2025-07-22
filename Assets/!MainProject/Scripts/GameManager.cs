@@ -22,31 +22,24 @@ public class GameManager : MonoBehaviour
     
     private float currentTime;
     private bool gameOver = false;
-
+    
     void Start()
     {
         if (victoryPanel != null)
             victoryPanel.SetActive(false);
-
+            
         currentTime = timeLimit;
-
+        
         if (restartButton != null)
-        {
             restartButton.onClick.AddListener(RestartGame);
-            Debug.Log("Restart button clicked");
-        }
-
+            
         if (nextLevelButton != null)
             nextLevelButton.onClick.AddListener(LoadNextLevel);
-
+        
         // Se tivermos wordSearchGame, registre um evento para saber quando todas as palavras foram encontradas
         if (wordSearchGame != null)
-{
-            wordSearchGame.OnAllWordsFound += HandleGameComplete;
-        }
-        else
         {
-            Debug.LogError("restartButton não foi atribuído no Inspector!");
+            wordSearchGame.OnAllWordsFound += HandleGameComplete;
         }
     }
     
