@@ -17,7 +17,7 @@ public class MenuManage : MonoBehaviour
         Application.Quit();
     }
     
-    public void changeScene(string nomeDaCena)
+    public void ChangeScene(string nomeDaCena)
     {
          SceneManager.LoadScene(nomeDaCena);
     }

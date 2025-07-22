@@ -246,17 +246,14 @@ private string[] wordList = new string[] {
         // Controle de seleção com o mouse
         if (Input.GetMouseButtonDown(0))
         {
-            // Inicia seleção
             StartSelection();
         }
         else if (Input.GetMouseButton(0) && isSelecting)
         {
-            // Continua seleção
             ContinueSelection();
         }
         else if (Input.GetMouseButtonUp(0) && isSelecting)
         {
-            // Finaliza seleção
             FinishSelection();
         }
     }
