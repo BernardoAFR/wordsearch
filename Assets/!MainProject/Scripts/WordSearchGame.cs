@@ -7,7 +7,8 @@ using System.Linq;
 public class WordSearchGame : MonoBehaviour
 {
     [Header("Configurações do Jogo")]
-    [SerializeField] private int gridSize = 11;
+    [SerializeField] private int gridWidth = 11;
+    [SerializeField] private int gridHeight = 15;
     [SerializeField] private GameObject letterPrefab;
     [SerializeField] private Transform gridContainer;
     [SerializeField] private Transform wordListContainer;
@@ -17,18 +18,14 @@ public class WordSearchGame : MonoBehaviour
     [SerializeField] private LineRenderer selectionLine;
 
     [Header("Cores")]
-    [SerializeField] private Color selectionCellColor = Color.white; // Cor ao selecionar
+    [SerializeField] private Color selectionCellColor = Color.white;
     [SerializeField] private Color correctWordColor = new Color(0.2f, 0.41f, 0.23f);
 
-    // --- MUDANÇA 1: Variável para guardar a cor original ---
-    private Color originalCellColor; // Não precisa ser configurada no Inspector
+    private Color originalCellColor;
 
     public event System.Action OnAllWordsFound;
 
-    private string[] wordList = new string[] {
-        "RESPEITO", "ESCUTA", "AMIZADE", "EMPATIA", "DIÁLOGO",
-        "COOPERAÇÃO", "SORRISO", "BRINCADEIRA", "REGRAS", "PAZ"
-    };
+    private string[] wordList = new[] { "RESPEITO", "ESCUTA", "AMIZADE", "EMPATIA", "DIALOGO", "APOIO", "SORRISO", "DIVERSAO", "REGRAS", "PAZ" };
 
     private char[,] grid;
     private Dictionary<string, bool> foundWords;
@@ -36,165 +33,217 @@ public class WordSearchGame : MonoBehaviour
     private bool isSelecting;
 
     private GameObject[,] letterObjects;
-    private Vector2[,] letterPositions;
+    private Vector3[,] letterPositions;
+    private Color[,] originalColors;
     private Dictionary<string, GameObject> wordItems;
 
-    void Start()
-    {
-        InitializeGame();
-    }
-
-    void Update()
-    {
-        HandleInput();
-    }
+    void Start() => InitializeGame();
+    void Update() => HandleInput();
 
     private void InitializeGame()
     {
-        // --- MUDANÇA 2: Capturar a cor original do Prefab ---
-        if (letterPrefab != null && letterPrefab.GetComponent<Image>() != null)
-        {
-            originalCellColor = letterPrefab.GetComponent<Image>().color;
-        }
-        else
-        {
-            Debug.LogError("O Prefab da letra (letterPrefab) não foi atribuído ou não possui um componente Image!");
-            originalCellColor = Color.white; // Cor de segurança
-        }
+        if (letterPrefab.TryGetComponent(out Image img)) originalCellColor = img.color;
+        else originalCellColor = Color.white;
 
-        grid = new char[gridSize, gridSize];
-        letterObjects = new GameObject[gridSize, gridSize];
-        letterPositions = new Vector2[gridSize, gridSize];
+        grid = new char[gridWidth, gridHeight];
+        letterObjects = new GameObject[gridWidth, gridHeight];
+        letterPositions = new Vector3[gridWidth, gridHeight];
+        originalColors = new Color[gridWidth, gridHeight];
         currentSelection = new List<Vector2Int>();
-        foundWords = new Dictionary<string, bool>();
+        foundWords = wordList.ToDictionary(w => w, w => false);
         wordItems = new Dictionary<string, GameObject>();
 
         selectionLine.positionCount = 0;
 
-        foreach (string word in wordList)
-        {
-            foundWords.Add(word, false);
-        }
-
         GenerateWordSearch();
         CreateWordList();
     }
-    
-    // ... (O resto do seu código de GenerateWordSearch, PlaceWord, FillEmptySpaces, etc., continua igual) ...
+
     private void GenerateWordSearch()
     {
-        for (int x = 0; x < gridSize; x++) { for (int y = 0; y < gridSize; y++) { grid[x, y] = ' '; } }
-        List<Vector2Int> directions = new List<Vector2Int> { new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(1, -1) };
-        List<string> shuffledWords = wordList.OrderBy(x => Random.value).ToList();
-        foreach (string word in shuffledWords)
+        for (int x = 0; x < gridWidth; x++)
+            for (int y = 0; y < gridHeight; y++)
+                grid[x, y] = ' ';
+
+        var directions = new[] { new Vector2Int(1,0), new Vector2Int(0,1), new Vector2Int(1,1), new Vector2Int(1,-1) };
+
+        foreach (var word in wordList.OrderByDescending(w => w.Length))
         {
-            bool placed = false;
-            int attempts = 0;
-            while (!placed && attempts < 100)
+            bool placed = false; int attempts = 0;
+            int len = word.Length - 1;
+            while (!placed && attempts++ < 500)
             {
-                Vector2Int direction = directions[Random.Range(0, directions.Count)];
-                int maxX = gridSize - (direction.x * word.Length); int maxY = gridSize - (direction.y * word.Length);
-                maxX = Mathf.Max(1, maxX); maxY = Mathf.Max(1, maxY);
-                int startX = Random.Range(0, maxX); int startY = Random.Range(0, maxY);
-                if (CanPlaceWord(word, startX, startY, direction)) { PlaceWord(word, startX, startY, direction); placed = true; }
-                attempts++;
+                var dir = directions[Random.Range(0, directions.Length)];
+                int maxX = gridWidth - Mathf.Abs(dir.x * len) - 1;
+                int maxY = gridHeight - Mathf.Abs(dir.y * len) - 1;
+                int sx = Random.Range(0, maxX + 1);
+                int sy = Random.Range(0, maxY + 1);
+                if (CanPlace(word, sx, sy, dir)) { Place(word, sx, sy, dir); placed = true; }
             }
-            if (!placed) { Debug.LogWarning("Não foi possível colocar a palavra: " + word); }
+            if (!placed) Debug.LogWarning($"Não foi possível colocar a palavra: {word}");
         }
+
         FillEmptySpaces();
         CreateLetterObjects();
     }
-    private bool CanPlaceWord(string word, int startX, int startY, Vector2Int direction){if (startX < 0 || startY < 0 || startX >= gridSize || startY >= gridSize) return false;for (int i = 0; i < word.Length; i++){int x = startX + (direction.x * i); int y = startY + (direction.y * i);if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return false;if (grid[x, y] != ' ' && grid[x, y] != word[i]) return false;}return true;}
-    private void PlaceWord(string word, int startX, int startY, Vector2Int direction){for (int i = 0; i < word.Length; i++) { int x = startX + (direction.x * i); int y = startY + (direction.y * i); grid[x, y] = word[i]; }}
-    private void FillEmptySpaces(){string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";for (int x = 0; x < gridSize; x++) { for (int y = 0; y < gridSize; y++) { if (grid[x, y] == ' ') { grid[x, y] = alphabet[Random.Range(0, alphabet.Length)]; } } }}
 
+    private bool CanPlace(string w, int x0, int y0, Vector2Int d)
+    {
+        for (int i = 0; i < w.Length; i++)
+        {
+            int x = x0 + d.x * i, y = y0 + d.y * i;
+            if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) return false;
+            if (grid[x,y] != ' ' && grid[x,y] != w[i]) return false;
+        }
+        return true;
+    }
+
+    private void Place(string w, int x0, int y0, Vector2Int d)
+    {
+        for (int i = 0; i < w.Length; i++)
+            grid[x0 + d.x * i, y0 + d.y * i] = w[i];
+    }
+
+    private void FillEmptySpaces()
+    {
+        const string abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (int x=0; x<gridWidth; x++)
+            for (int y=0; y<gridHeight; y++)
+                if (grid[x,y] == ' ') grid[x,y] = abc[Random.Range(0,abc.Length)];
+    }
 
     private void CreateLetterObjects()
     {
-        float cellSize = gridContainer.GetComponent<RectTransform>().rect.width / gridSize;
-        for (int y = 0; y < gridSize; y++)
-        {
-            for (int x = 0; x < gridSize; x++)
+        RectTransform rtGrid = gridContainer.GetComponent<RectTransform>();
+        float cellSize = rtGrid.rect.width / gridWidth;
+        for (int y = 0; y < gridHeight; y++)
+            for (int x = 0; x < gridWidth; x++)
             {
-                GameObject letterObj = Instantiate(letterPrefab, gridContainer);
-                RectTransform rectTransform = letterObj.GetComponent<RectTransform>();
-                rectTransform.anchoredPosition = new Vector2(x * cellSize + cellSize / 2, -y * cellSize - cellSize / 2);
-                rectTransform.sizeDelta = new Vector2(cellSize * 0.9f, cellSize * 0.9f);
-                letterObj.GetComponentInChildren<TextMeshProUGUI>().text = grid[x, y].ToString();
-                
-                // --- MUDANÇA 3: REMOVER a linha que definia a cor aqui ---
-                // Agora o prefab manterá sua cor original (marrom) ao ser criado.
+                var obj = Instantiate(letterPrefab, gridContainer);
+                var rt = obj.GetComponent<RectTransform>();
+                rt.anchoredPosition = new Vector2(x * cellSize + cellSize/2, -y * cellSize - cellSize/2);
+                rt.sizeDelta = Vector2.one * cellSize * 0.9f;
 
-                letterObjects[x, y] = letterObj;
-                letterPositions[x, y] = rectTransform.position;
+                obj.GetComponentInChildren<TextMeshProUGUI>().text = grid[x,y].ToString();
+                var img = obj.GetComponent<Image>();
+                originalColors[x,y] = img.color;
+
+                letterObjects[x,y] = obj;
+                letterPositions[x,y] = rt.position;
             }
+    }
+
+    private void CreateWordList()
+    {
+        foreach (var w in wordList)
+        {
+            var item = Instantiate(wordPrefabItem, wordListContainer);
+            item.GetComponentInChildren<TextMeshProUGUI>().text = w;
+            wordItems[w] = item;
         }
     }
 
-    private void CreateWordList(){foreach (string word in wordList) { GameObject wordItem = Instantiate(wordPrefabItem, wordListContainer); wordItem.GetComponentInChildren<TextMeshProUGUI>().text = word; wordItems.Add(word, wordItem); }}
-    private void HandleInput(){if (Input.GetMouseButtonDown(0)) StartSelection();else if (Input.GetMouseButton(0) && isSelecting) ContinueSelection();else if (Input.GetMouseButtonUp(0) && isSelecting) FinishSelection();}
-    private void StartSelection(){Vector2Int? cellPosition = GetCellUnderMouse();if (cellPosition.HasValue){isSelecting = true;currentSelection.Clear();currentSelection.Add(cellPosition.Value);selectionLine.positionCount = 1;selectionLine.SetPosition(0, letterPositions[cellPosition.Value.x, cellPosition.Value.y]);HighlightCell(cellPosition.Value, true);}}
-    private void ContinueSelection(){Vector2Int? cellPosition = GetCellUnderMouse();if (cellPosition.HasValue && !currentSelection.Contains(cellPosition.Value)){Vector2Int lastCell = currentSelection.Last(); Vector2Int direction = cellPosition.Value - lastCell;direction.x = direction.x != 0 ? (int)Mathf.Sign(direction.x) : 0; direction.y = direction.y != 0 ? (int)Mathf.Sign(direction.y) : 0;if (currentSelection.Count > 1){Vector2Int prevDirection = lastCell - currentSelection[currentSelection.Count - 2];prevDirection.x = prevDirection.x != 0 ? (int)Mathf.Sign(prevDirection.x) : 0; prevDirection.y = prevDirection.y != 0 ? (int)Mathf.Sign(prevDirection.y) : 0;if (direction != prevDirection) return;}if (IsAdjacent(lastCell, cellPosition.Value)){currentSelection.Add(cellPosition.Value);selectionLine.positionCount = currentSelection.Count;selectionLine.SetPosition(currentSelection.Count - 1, letterPositions[cellPosition.Value.x, cellPosition.Value.y]);HighlightCell(cellPosition.Value, true);}}}
-
-    private void FinishSelection()
+    private void HandleInput()
     {
-        bool wordWasCorrect = false;
+        if (Input.GetMouseButtonDown(0)) StartSel();
+        else if (Input.GetMouseButton(0) && isSelecting) ContinueSel();
+        else if (Input.GetMouseButtonUp(0) && isSelecting) EndSel();
+    }
+
+    private void StartSel()
+    {
+        var c = GetCellUnderMouse(); if (!c.HasValue) return;
+        isSelecting = true; currentSelection.Clear(); AddCell(c.Value);
+    }
+
+        private void ContinueSel()
+    {
+        var c = GetCellUnderMouse();
+        if (!c.HasValue) return;
+        Vector2Int pos = c.Value;
+        if (currentSelection.Contains(pos)) return;
+
+        Vector2Int last = currentSelection.Last();
+        Vector2Int dir = pos - last;
+        dir.x = dir.x != 0 ? dir.x / Mathf.Abs(dir.x) : 0;
+        dir.y = dir.y != 0 ? dir.y / Mathf.Abs(dir.y) : 0;
+
+        if (currentSelection.Count > 1)
+        {
+            Vector2Int prev = last - currentSelection[currentSelection.Count - 2];
+            prev.x = prev.x != 0 ? prev.x / Mathf.Abs(prev.x) : 0;
+            prev.y = prev.y != 0 ? prev.y / Mathf.Abs(prev.y) : 0;
+            if (dir != prev) return;
+        }
+
+        if (IsAdjacent(last, pos))
+        {
+            AddCell(pos);
+        }
+    }
+
+    private void AddCell(Vector2Int c)
+    {
+        currentSelection.Add(c);
+        var pts = currentSelection.Select(p => letterPositions[p.x,p.y]).ToArray();
+        selectionLine.positionCount = pts.Length; selectionLine.SetPositions(pts);
+        HighlightCell(c,true);
+    }
+
+    private void EndSel()
+    {
+        bool correct = false;
         if (currentSelection.Count >= 3)
         {
-            string selectedWord = GetSelectedWord();
-            string reversedSelectedWord = new string(selectedWord.Reverse().ToArray());
-
-            if (foundWords.ContainsKey(selectedWord) && !foundWords[selectedWord])
-            {
-                foundWords[selectedWord] = true;
-                wordItems[selectedWord].GetComponent<Image>().color = correctWordColor;
-                wordWasCorrect = true;
-            }
-            else if (foundWords.ContainsKey(reversedSelectedWord) && !foundWords[reversedSelectedWord])
-            {
-                foundWords[reversedSelectedWord] = true;
-                wordItems[reversedSelectedWord].GetComponent<Image>().color = correctWordColor;
-                wordWasCorrect = true;
-            }
+            var s = GetWord(currentSelection);
+            var sr = new string(s.Reverse().ToArray());
+            if (foundWords.ContainsKey(s) && !foundWords[s]) { foundWords[s] = true; correct = true; MarkWord(s); }
+            else if (foundWords.ContainsKey(sr) && !foundWords[sr]) { foundWords[sr] = true; correct = true; MarkWord(sr); }
         }
-        
-        // --- MUDANÇA 4: Usar a originalCellColor para reverter a seleção ---
-        Color finalColor = wordWasCorrect ? correctWordColor : originalCellColor;
+        var clr = correct ? correctWordColor : originalCellColor;
+        foreach (var c in currentSelection)
+            if (letterObjects[c.x,c.y].GetComponent<Image>().color != correctWordColor)
+                letterObjects[c.x,c.y].GetComponent<Image>().color = clr;
 
-        foreach (Vector2Int cell in currentSelection)
-        {
-            if (letterObjects[cell.x, cell.y].GetComponent<Image>().color != correctWordColor)
-            {
-                 letterObjects[cell.x, cell.y].GetComponent<Image>().color = finalColor;
-            }
-        }
-
-        if (wordWasCorrect) {
-            foreach(Vector2Int cell in currentSelection) {
-                letterObjects[cell.x, cell.y].GetComponent<Image>().color = correctWordColor;
-            }
-        }
-
-        if (foundWords.All(w => w.Value))
-        {
-            Debug.Log("Parabéns! Você encontrou todas as palavras!");
-            OnAllWordsFound?.Invoke();
-        }
-
-        currentSelection.Clear();
-        isSelecting = false;
-        selectionLine.positionCount = 0;
+        currentSelection.Clear(); isSelecting = false; selectionLine.positionCount = 0;
+        if (foundWords.All(kv => kv.Value)) OnAllWordsFound?.Invoke();
     }
 
-    private Vector2Int? GetCellUnderMouse(){if (letterObjects == null || gridSize <= 0) return null;Vector2 mousePosition = Input.mousePosition;for (int x = 0; x < gridSize; x++){for (int y = 0; y < gridSize; y++){if (letterObjects[x, y] == null || letterObjects[x, y].GetComponent<RectTransform>() == null) continue;if (RectTransformUtility.RectangleContainsScreenPoint(letterObjects[x, y].GetComponent<RectTransform>(), mousePosition)) { return new Vector2Int(x, y); }}}return null;}
-    private bool IsAdjacent(Vector2Int cell1, Vector2Int cell2){int dx = Mathf.Abs(cell1.x - cell2.x); int dy = Mathf.Abs(cell1.y - cell2.y);return (dx <= 1 && dy <= 1) && !(dx == 0 && dy == 0);}
-    private string GetSelectedWord(){string word = ""; foreach (Vector2Int cell in currentSelection) { word += grid[cell.x, cell.y]; }return word;}
-
-    private void HighlightCell(Vector2Int cell, bool highlight)
+    private void MarkWord(string w)
     {
-        if (letterObjects[cell.x, cell.y].GetComponent<Image>().color == correctWordColor) return;
-        
-        Color color = highlight ? selectionCellColor : originalCellColor;
-        letterObjects[cell.x, cell.y].GetComponent<Image>().color = color;
+        wordItems[w].GetComponent<Image>().color = correctWordColor;
+        foreach (var p in currentSelection)
+            letterObjects[p.x,p.y].GetComponent<Image>().color = correctWordColor;
+    }
+
+    private Vector2Int? GetCellUnderMouse()
+    {
+        var mp = Input.mousePosition;
+        for (int x=0;x<gridWidth;x++) for(int y=0;y<gridHeight;y++)
+        {
+            var rt = letterObjects[x,y]?.GetComponent<RectTransform>();
+            if (rt!=null && RectTransformUtility.RectangleContainsScreenPoint(rt,mp))
+                return new Vector2Int(x,y);
+        }
+        return null;
+    }
+
+    private bool IsAdjacent(Vector2Int a, Vector2Int b)
+    {
+        int dx = Mathf.Abs(a.x-b.x), dy = Mathf.Abs(a.y-b.y);
+        return (dx<=1 && dy<=1) && !(dx==0 && dy==0);
+    }
+
+    private string GetWord(List<Vector2Int> sel)
+    {
+        return string.Concat(sel.Select(p => grid[p.x,p.y]));
+    }
+
+    private void HighlightCell(Vector2Int c, bool on)
+    {
+        var img = letterObjects[c.x,c.y].GetComponent<Image>();
+        if (img.color == correctWordColor) return;
+        img.color = on ? selectionCellColor : originalColors[c.x,c.y];
     }
 }
+
