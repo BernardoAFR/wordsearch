@@ -997,7 +997,6 @@ MonoBehaviour:
   victoryPanel: {fileID: 1469546683}
   timerText: {fileID: 910966449}
   restartButton: {fileID: 124929510}
-  nextLevelButton: {fileID: 638823768}
   timeLimit: 300
   useTimer: 1
   nextLevelName: 
@@ -2132,6 +2131,7 @@ GameObject:
   - component: {fileID: 1469546684}
   - component: {fileID: 1469546686}
   - component: {fileID: 1469546685}
+  - component: {fileID: 1469546687}
   m_Layer: 5
   m_Name: VictoryPanel
   m_TagString: Untagged
@@ -2199,6 +2199,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1469546683}
   m_CullTransparentMesh: 1
+--- !u!114 &1469546687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469546683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8ff9edaf4b7ee84e93ac841a62cad2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wordSearchGame: {fileID: 1596838987}
+  victoryPanel: {fileID: 0}
+  timerText: {fileID: 910966449}
+  restartButton: {fileID: 1557957834}
+  timeLimit: 300
+  useTimer: 1
+  nextLevelName: 
 --- !u!1 &1557957832
 GameObject:
   m_ObjectHideFlags: 0
@@ -2211,9 +2230,8 @@ GameObject:
   - component: {fileID: 1557957836}
   - component: {fileID: 1557957835}
   - component: {fileID: 1557957834}
-  - component: {fileID: 1557957837}
   m_Layer: 5
-  m_Name: Restart
+  m_Name: Restart-V
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2282,7 +2300,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1557957835}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 749630691}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: RestartGame
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 1
 --- !u!114 &1557957835
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2321,26 +2351,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1557957832}
   m_CullTransparentMesh: 1
---- !u!114 &1557957837
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1557957832}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a8ff9edaf4b7ee84e93ac841a62cad2a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  wordSearchGame: {fileID: 0}
-  victoryPanel: {fileID: 0}
-  timerText: {fileID: 0}
-  restartButton: {fileID: 1557957834}
-  nextLevelButton: {fileID: 0}
-  timeLimit: 300
-  useTimer: 1
-  nextLevelName: 
 --- !u!1 &1596838982
 GameObject:
   m_ObjectHideFlags: 0

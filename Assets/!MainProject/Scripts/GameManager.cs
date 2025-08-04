@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject victoryPanel;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private Button restartButton;
-    [SerializeField] private Button nextLevelButton;
+    //[SerializeField] private Button nextLevelButton;
     
     [Header("Configurações")]
     [SerializeField] private float timeLimit = 300f; // 5 minutos
@@ -36,17 +36,15 @@ public class GameManager : MonoBehaviour
             Debug.Log("Restart button clicked");
         }
 
-        if (nextLevelButton != null)
-            nextLevelButton.onClick.AddListener(LoadNextLevel);
 
         // Se tivermos wordSearchGame, registre um evento para saber quando todas as palavras foram encontradas
         if (wordSearchGame != null)
-{
+        {
             wordSearchGame.OnAllWordsFound += HandleGameComplete;
         }
         else
         {
-            Debug.LogError("restartButton não foi atribuído no Inspector!");
+            Debug.LogError("wordSearchGame não foi atribuído no Inspector!");
         }
     }
     
@@ -82,10 +80,13 @@ public class GameManager : MonoBehaviour
             victoryPanel.SetActive(true);
             
             // Se não tiver próximo nível, desativa o botão
+            /*
             if (string.IsNullOrEmpty(nextLevelName) && nextLevelButton != null)
             {
                 nextLevelButton.gameObject.SetActive(false);
             }
+            */
+
         }
     }
     
