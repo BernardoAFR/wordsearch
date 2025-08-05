@@ -25,8 +25,16 @@ public class WordSearchGame : MonoBehaviour
 
     public event System.Action OnAllWordsFound;
 
-    private string[] wordList = new[] { "RESPEITO", "ESCUTA", "AMIZADE", "EMPATIA", "DIALOGO", "APOIO", "SORRISO", "DIVERSAO", "REGRAS", "PAZ" };
-
+    private string[] AllwordList = new[] { "RESPEITO", "ESCUTA", "AMIZADE", "EMPATIA", "DIALOGO", "SORRISO", "DIVERSAO", "REGRAS", "PAZ",
+    "CARINHO", "ALEGRIA", "PARTILHA", "ESPERANCA", "GENTILEZA",
+    "TOLERANCIA", "UNIAO", "AFETO", "SOLIDARIEDADE", "PERDAO",
+    "HARMONIA", "CUIDADO", "COMPREENSAO", "SINCERIDADE", "AFINIDADE",
+    "LIDERANÇA", "ESCOLHA", "INTERACAO", "FELICIDADE", "ABRACO",
+    "SORRIR", "DEDICACAO", "CALMA", "EMPENHO", "CONFIANCA",
+    "INICIATIVA", "COERENCIA", "COOPERAR", "CRESCER",
+    "ATENCAO", "RESILIENCIA", "ESCOLHER", "APRENDER", "BRINCAR",
+    "APOIO", "VALOR", "VONTADE", "SABEDORIA", "ENSINAR"};
+    private string[] wordList; 
     private char[,] grid;
     private Dictionary<string, bool> foundWords;
     private List<Vector2Int> currentSelection;
@@ -50,6 +58,7 @@ public class WordSearchGame : MonoBehaviour
         letterPositions = new Vector3[gridWidth, gridHeight];
         originalColors = new Color[gridWidth, gridHeight];
         currentSelection = new List<Vector2Int>();
+        wordList = AllwordList.Where(w => verifyLenght(w)).OrderBy(w => Random.value).Take(10).ToArray();
         foundWords = wordList.ToDictionary(w => w, w => false);
         wordItems = new Dictionary<string, GameObject>();
 
@@ -57,6 +66,11 @@ public class WordSearchGame : MonoBehaviour
 
         GenerateWordSearch();
         CreateWordList();
+    }
+
+    private bool verifyLenght(string word){
+        int minLength = Mathf.Min(gridWidth, gridHeight);
+        return word.Length <= minLength;
     }
 
     private void GenerateWordSearch()
