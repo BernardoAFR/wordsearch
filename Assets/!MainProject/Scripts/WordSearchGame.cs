@@ -22,6 +22,7 @@ public class WordSearchGame : MonoBehaviour
     [SerializeField] private Color correctWordColor = new Color(0.2f, 0.41f, 0.23f);
 
     private Color originalCellColor;
+    private Dictionary<string, List<Vector2Int>> placedPositions;
 
     public event System.Action OnAllWordsFound;
 
@@ -64,6 +65,7 @@ public class WordSearchGame : MonoBehaviour
 
         selectionLine.positionCount = 0;
 
+        placedPositions = new Dictionary<string, List<Vector2Int>>();
         GenerateWordSearch();
         CreateWordList();
     }
@@ -83,7 +85,8 @@ public class WordSearchGame : MonoBehaviour
 
         foreach (var word in wordList.OrderByDescending(w => w.Length))
         {
-            bool placed = false; int attempts = 0;
+            bool placed = false; 
+            int attempts = 0;
             int len = word.Length - 1;
             while (!placed && attempts++ < 500)
             {
@@ -92,15 +95,35 @@ public class WordSearchGame : MonoBehaviour
                 int maxY = gridHeight - Mathf.Abs(dir.y * len) - 1;
                 int sx = Random.Range(0, maxX + 1);
                 int sy = Random.Range(0, maxY + 1);
-                if (CanPlace(word, sx, sy, dir)) { Place(word, sx, sy, dir); placed = true; }
+                if (CanPlace(word, sx, sy, dir)) { 
+                    var cells = new List<Vector2Int>();
+
+                    for(int i = 0; i < word.Length; i++){
+                        cells.Add(new Vector2Int(sx + dir.x * i, sy + dir.y * i)) ;
+                    }
+                    placedPositions[word] = cells;
+                    Place(word, sx, sy, dir); 
+                    placed = true; 
+                }
             }
-            if (!placed) Debug.LogWarning($"Não foi possível colocar a palavra: {word}");
+            if (!placed) 
+                Debug.LogWarning($"Não foi possível colocar a palavra: {word}");
         }
 
         FillEmptySpaces();
         CreateLetterObjects();
     }
 
+    public void RevealAllWords(){
+        foreach(var wordsData in placedPositions){
+            string word = wordsData.Key;
+            if (foundWords.TryGetValue(word, out bool found) && !found){
+                foreach (var cell in wordsData.Value)
+                    letterObjects[cell.x, cell.y].GetComponent<Image>().color = correctWordColor;
+            }
+
+        }
+    }
     private bool CanPlace(string w, int x0, int y0, Vector2Int d)
     {
         for (int i = 0; i < w.Length; i++)

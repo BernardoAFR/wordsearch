@@ -10,12 +10,16 @@ public class GameManager : MonoBehaviour
     [Header("Referências")]
     [SerializeField] private WordSearchGame wordSearchGame;
     [SerializeField] private GameObject victoryPanel;
+    [SerializeField] private GameObject gameOverPanel;
+
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private Button restartButton;
+    [SerializeField]private ParticleSystem confettiSystem;
+
     //[SerializeField] private Button nextLevelButton;
     
     [Header("Configurações")]
-    [SerializeField] private float timeLimit = 300f; // 5 minutos
+    [SerializeField] private float timeLimit = 180f; // 5 minutos
     [SerializeField] private bool useTimer = true;
     [SerializeField] private string nextLevelName;
     
@@ -23,21 +27,42 @@ public class GameManager : MonoBehaviour
     private float currentTime;
     private bool gameOver = false;
 
-    void Start()
+   void Start()
     {
+        // 1) Desativa o painel se estiver atribuído
         if (victoryPanel != null)
             victoryPanel.SetActive(false);
 
-        currentTime = timeLimit;
-
-        if (restartButton != null)
+        // 2) Configura o sistema de partículas (confetti)
+        if (victoryPanel == null)
         {
-            restartButton.onClick.AddListener(RestartGame);
-            Debug.Log("Restart button clicked");
+            Debug.LogError("VictoryPanel não foi atribuído no Inspector!");
+        }
+        else
+        {
+            var emitter = victoryPanel.transform.Find("ConfettiEmitter");
+            if (emitter == null)
+                Debug.LogError("Não achei o filho 'ConfettiEmitter' em VictoryPanel");
+            else
+            {
+                confettiSystem = emitter.GetComponent<ParticleSystem>();
+                if (confettiSystem == null)
+                    Debug.LogError("'ConfettiEmitter' não tem ParticleSystem!");
+            }
         }
 
+        // 3) Inicializa tempo e botão de restart
+        currentTime = timeLimit;
+        if (restartButton != null)
+        {
+            restartButton.onClick.AddListener(() =>
+            {
+                Debug.Log("Botão de reinício clicado");
+                RestartGame();
+            });
+        }
 
-        // Se tivermos wordSearchGame, registre um evento para saber quando todas as palavras foram encontradas
+        // 4) Assina o evento do wordSearchGame
         if (wordSearchGame != null)
         {
             wordSearchGame.OnAllWordsFound += HandleGameComplete;
@@ -47,7 +72,7 @@ public class GameManager : MonoBehaviour
             Debug.LogError("wordSearchGame não foi atribuído no Inspector!");
         }
     }
-    
+
     void Update()
     {
         if (gameOver || !useTimer) return;
@@ -78,6 +103,8 @@ public class GameManager : MonoBehaviour
         if (victoryPanel != null)
         {
             victoryPanel.SetActive(true);
+            confettiSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            confettiSystem.Play();
             
             // Se não tiver próximo nível, desativa o botão
             /*
@@ -92,7 +119,12 @@ public class GameManager : MonoBehaviour
     
     private void HandleTimeOut()
     {
-        gameOver = true;
+        if (gameOverPanel != null) 
+            gameOverPanel.SetActive(true);
+
+        // 2) Revela todas as palavras
+        if (wordSearchGame != null)
+            wordSearchGame.RevealAllWords();
         // Aqui você pode adicionar lógica para quando o tempo acabar
         // (mostrar mensagem, desabilitar interação, etc.)
     }
