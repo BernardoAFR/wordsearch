@@ -7,8 +7,8 @@ using System.Linq;
 public class WordSearchGame : MonoBehaviour
 {
     [Header("Configurações do Jogo")]
-    [SerializeField] private int gridWidth = 11;
-    [SerializeField] private int gridHeight = 15;
+    [SerializeField] private int gridWidth = 13;
+    [SerializeField] private int gridHeight = 11;
     [SerializeField] private GameObject letterPrefab;
     [SerializeField] private Transform gridContainer;
     [SerializeField] private Transform wordListContainer;
@@ -59,6 +59,7 @@ public class WordSearchGame : MonoBehaviour
         letterPositions = new Vector3[gridWidth, gridHeight];
         originalColors = new Color[gridWidth, gridHeight];
         currentSelection = new List<Vector2Int>();
+        
         wordList = AllwordList.Where(w => verifyLenght(w)).OrderBy(w => Random.value).Take(10).ToArray();
         foundWords = wordList.ToDictionary(w => w, w => false);
         wordItems = new Dictionary<string, GameObject>();

@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
     //[SerializeField] private Button nextLevelButton;
     
     [Header("Configurações")]
-    [SerializeField] private float timeLimit = 180f; // 5 minutos
+    [SerializeField] private float timeLimit = 300f; // 5 minutos
     [SerializeField] private bool useTimer = true;
     [SerializeField] private string nextLevelName;
     
